@@ -11,7 +11,7 @@
 от решений игрока.
 
 Проект собирается через **CMake**, поддерживает **консольный (TUI)** и
-**графический (GUI, Raylib)** интерфейсы.
+**графический (GUI, Framework)** интерфейсы.
 
 ---
 
@@ -40,7 +40,7 @@ WithLand/
 │   ├── core/               # ядро симуляции (Colony, Colonist, Wedding, ...)
 │   ├── common/             # утилиты (Logger, FileManager, common)
 │   ├── tui/                # консольный интерфейс
-│   └── gui/                # графический интерфейс (Raylib)
+│   └── gui/                # графический интерфейс (Framework)
 ├── resources/              # иконки, ассеты
 └── docs/                   # архитектурная документация (в разработке)
 ```
@@ -56,7 +56,7 @@ WithLand/
 | **C++** | C++17 |
 | **Git** | для клонирования (и для FetchContent) |
 
-Raylib подтягивается автоматически через `FetchContent` при сборке GUI —
+Framework подтягивается автоматически через `FetchContent` при сборке GUI —
 отдельно ставить не нужно.
 
 ---
@@ -70,7 +70,7 @@ git clone https://github.com/Sharzhukov/WithLand.git
 cd WithLand
 ```
 
-### 2. TUI-сборка (быстрая, без raylib)
+### 2. TUI-сборка (быстрая, без Framework)
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -78,7 +78,7 @@ cmake --build build -j 8
 ./build/bin/WithLand
 ```
 
-### 3. GUI-сборка (Raylib, первый раз ~2 мин)
+### 3. GUI-сборка (Framework, первый раз ~2 мин)
 
 ```bash
 cmake -S . -B build-gui -DCMAKE_BUILD_TYPE=Debug -DENABLE_GUI=ON
@@ -111,7 +111,7 @@ cmake --build build-release -j 8
 
 | Опция | По умолчанию | Описание |
 |---|---|---|
-| `ENABLE_GUI` | `OFF` | Собрать GUI-версию на Raylib вместо TUI |
+| `ENABLE_GUI` | `OFF` | Собрать GUI-версию на Framework вместо TUI |
 | `CMAKE_BUILD_TYPE` | *(пусто)* | `Debug` / `Release` / `RelWithDebInfo` |
 
 Пример:
@@ -151,7 +151,7 @@ cmake -S . -B build-gui -DENABLE_GUI=ON -DCMAKE_BUILD_TYPE=Release
 - [x] Консольный интерфейс (TUI)
 - [x] Разделение на модули (`core`, `common`, `tui`, `gui`)
 - [x] Сборка через CMake + FetchContent
-- [ ] GUI на Raylib — довести до играбельного состояния
+- [ ] GUI на Framework — довести до играбельного состояния
 - [ ] Система сохранения и загрузки
 - [ ] Случайные события и болезни
 - [ ] ИИ для врагов и животных
