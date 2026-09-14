@@ -75,6 +75,7 @@ namespace WithLand{
     int ColonistList::idTotal = 0;
 
     void runApplication() {
+        ChangeDirectory(GetApplicationDirectory());
         //f_initWindow();
         std::vector<ColonistList> colonistList;
         DataApp dApp;

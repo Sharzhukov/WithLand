@@ -106,6 +106,19 @@ if(ENABLE_GUI)
             target_sources(WithLand PRIVATE ${ICON_FILE})
         endif()
 
+        # Укажите имя вашего исполняемого файла (замените MyGame на ваше название)
+        set(TARGET_NAME MyGame)
+
+        # Папка с ресурсами в вашем проекте
+        set(RES_FOLDER "${CMAKE_SOURCE_DIR}/resources")
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/resources"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/resources"
+            COMMENT "Копирование ресурсов в директорию сборки..."
+        )
+
         set_target_properties(WithLand PROPERTIES
             MACOSX_BUNDLE TRUE
             MACOSX_BUNDLE_INFO_PLIST       "${CMAKE_SOURCE_DIR}/Info.plist"
