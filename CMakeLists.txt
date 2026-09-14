@@ -36,7 +36,10 @@ if(ENABLE_GUI)
         src/gui/lib/initWindowApp.cpp
         src/gui/lib/DataApp.cpp
     )
-    message(STATUS "🔵 Building with GUI support (Raylib)")
+
+    # Ставим опции ДО FetchContent_Declare
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 
     include(FetchContent)
     FetchContent_Declare(
@@ -45,9 +48,9 @@ if(ENABLE_GUI)
         GIT_TAG        "5.5"
         GIT_SHALLOW    TRUE
     )
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(raylib)
+
+    message(STATUS "🔵 Building with GUI support (Raylib)")
 else()
     list(APPEND CORE_SOURCES src/tui/ConsoleUI.cpp)
     message(STATUS "🟢 Building with TUI support (Console)")
@@ -90,13 +93,27 @@ if(ENABLE_GUI)
 endif()
 
 # ============================================
+# КОПИРОВАНИЕ РЕСУРСОВ — одна функция на все цели
+# ============================================
+function(withland_copy_resources target)
+    if(NOT ENABLE_GUI)
+        return()
+    endif()
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/resources"
+            "$<TARGET_FILE_DIR:${target}>/resources"
+        COMMENT "Копирование ресурсов для ${target}..."
+    )
+endfunction()
+
+# ============================================
 # ЦЕЛЬ 1: WithLand — чистый .app (без терминала)
 # ============================================
 add_executable(WithLand src/main.cpp)
 target_link_libraries(WithLand PRIVATE withland_core)
 
 if(ENABLE_GUI)
-
     # --- Иконка macOS ---
     if(APPLE)
         set(ICON_FILE "${CMAKE_SOURCE_DIR}/resources/assets/appIcon.icns")
@@ -105,19 +122,6 @@ if(ENABLE_GUI)
                 MACOSX_PACKAGE_LOCATION Resources)
             target_sources(WithLand PRIVATE ${ICON_FILE})
         endif()
-
-        # Укажите имя вашего исполняемого файла (замените MyGame на ваше название)
-        set(TARGET_NAME MyGame)
-
-        # Папка с ресурсами в вашем проекте
-        set(RES_FOLDER "${CMAKE_SOURCE_DIR}/resources")
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_SOURCE_DIR}/resources"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/resources"
-            COMMENT "Копирование ресурсов в директорию сборки..."
-        )
 
         set_target_properties(WithLand PROPERTIES
             MACOSX_BUNDLE TRUE
@@ -135,6 +139,10 @@ if(ENABLE_GUI)
     # --- Иконка Windows (без консольного окна) ---
     if(WIN32)
         set_target_properties(WithLand PROPERTIES WIN32_EXECUTABLE TRUE)
+        if(MSVC)
+            target_link_options(WithLand PRIVATE /ENTRY:mainCRTStartup)
+        endif()
+
         set(ICON_FILE "${CMAKE_SOURCE_DIR}/resources/assets/appIcon.ico")
         if(EXISTS ${ICON_FILE})
             configure_file(
@@ -148,6 +156,8 @@ if(ENABLE_GUI)
     endif()
 endif()
 
+withland_copy_resources(WithLand)
+
 # ============================================
 # ЦЕЛЬ 2: WithLandLog — app + терминал с логами
 # ============================================
@@ -158,36 +168,22 @@ if(ENABLE_GUI)
     # Макрос, по которому код понимает: работаем в log-режиме
     target_compile_definitions(WithLandLog PRIVATE WITHLAND_LOG_MODE)
 
-    # ВАЖНО:
-    # - macOS: НЕ ставим MACOSX_BUNDLE → бинарник запускается из терминала,
-    #          stdout/stderr идут прямо в консоль
-    # - Windows: НЕ ставим WIN32_EXECUTABLE → консольное окно остаётся рядом
-    #            с окном raylib
+    # macOS: без MACOSX_BUNDLE → запуск из терминала, stdout/stderr в консоль
+    # Windows: без WIN32_EXECUTABLE → консольное окно рядом с raylib
+    withland_copy_resources(WithLandLog)
+
     message(STATUS "🐞 WithLandLog → console + GUI (log mode)")
-endif()
-
-# ============================================
-# КОПИРОВАНИЕ РЕСУРСОВ
-# ============================================
-if(ENABLE_GUI)
-    add_custom_command(TARGET WithLand POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/resources"
-            "$<TARGET_FILE_DIR:WithLand>/resources"
-    )
-
-    if(TARGET WithLandLog)
-        add_custom_command(TARGET WithLandLog POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_SOURCE_DIR}/resources"
-                "$<TARGET_FILE_DIR:WithLandLog>/resources"
-        )
-    endif()
 endif()
 
 # ============================================
 # ИНФОРМАЦИЯ
 # ============================================
+if(ENABLE_GUI)
+    set(_targets "WithLand, WithLandLog")
+else()
+    set(_targets "WithLand")
+endif()
+
 message(STATUS "")
 message(STATUS "=====================================")
 message(STATUS "Project:      ${PROJECT_NAME}")
@@ -195,6 +191,6 @@ message(STATUS "Version:      ${PROJECT_VERSION}")
 message(STATUS "Build Type:   ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "GUI Support:  ${ENABLE_GUI}")
-message(STATUS "Targets:      WithLand" $<IF:$<BOOL:${ENABLE_GUI}>,", WithLandLog","">)
+message(STATUS "Targets:      ${_targets}")
 message(STATUS "=====================================")
 message(STATUS "")
